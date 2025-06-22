@@ -2,6 +2,9 @@
 #include <vector>
 
 typedef uint64_t Param; // variables in traditional stlc
+typedef uint64_t Global; // similar to global variables in c++. substitute in before beta-redn in full evaluation
+typedef uint64_t TypeIndex;
+typedef uint64_t ExpressionIndex;
 
 enum BaseType {
     u64,
@@ -16,16 +19,16 @@ struct BaseValue {
     } content;
 };
 
-enum TyD {
-    atom, // e.g. u64, b1
-    arrow, // e.g. u64 -> u64, u64 -> u64 -> b1
+enum TyD { // tag for `Type`
+    atom,
+    arrow,
 };
 
 struct Type {
     TyD form;
     union {
-        BaseType atom;
-        struct { Type* a; Type* b; } arrow;
+        BaseType atom; // e.g. u64, b1
+        struct { Type* a; Type* b; } arrow; // e.g. u64 -> u64, u64 -> u64 -> b1
     } content;
 };
 
@@ -40,12 +43,12 @@ enum ExpD { // tag for `Expression`
 
 struct BaseFunction { // stores implementation of function
     Type* type;
-    BaseValue (*implement)(std::vector<BaseValue>);
+    Expression (*implement)(std::vector<Expression>);
 };
 
 struct EffectiveFunction { // 
     BaseFunction* src;
-    std::vector<BaseValue> args;
+    std::vector<Expression> args;
 };
 
 struct World {
@@ -53,16 +56,16 @@ struct World {
 };
 
 struct Expression {
-    ExpD form;
-    union {
+    const ExpD form;
+    const union {
         BaseValue val; // see `BaseValue`
         EffectiveFunction efunc; // see `EffectiveFunction`
         Param param; // see `Param`
-        uint64_t glob; // similar to global variables in c++. substitute in before beta-redn in full evaluation
+        uint64_t glob;
         struct { Expression* m; Expression* n; } appl; // two expressions side-by-side for potential beta-redn
         struct { Param x; Expression* m; } abst; // lambda func definition
     } content;
-    Type* type;
+    const Type* type;
 };
 
 bool is_closed(const Expression &exp) {
